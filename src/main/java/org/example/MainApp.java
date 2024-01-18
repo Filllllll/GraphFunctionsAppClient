@@ -2,7 +2,6 @@ package org.example;
 
 import org.json.JSONObject;
 
-
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Group;
@@ -10,7 +9,6 @@ import javafx.scene.Scene;
 import javafx.scene.SubScene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -19,7 +17,6 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 public class MainApp extends Application {
-    private TextArea textArea; // Это переменная класса, которая должна быть инициализирована
     private Graph3DRenderer graph3DRenderer;
 
     @Override
@@ -53,8 +50,6 @@ public class MainApp extends Application {
         TextField tfParam2 = new TextField();
         inputGridPane.add(tfParam2, 1, 6);
 
-        textArea = new TextArea();
-        textArea.setEditable(false);
         Button drawGraphButton = new Button("Построить график");
 
         // Действия для кнопок
@@ -76,7 +71,6 @@ public class MainApp extends Application {
 
         // Добавляем все элементы в GridPane
         inputGridPane.add(drawGraphButton, 0, 7, 2, 1);
-        inputGridPane.add(textArea, 0, 9, 2, 1);
 
         StackPane graphContainer = new StackPane();
         SubScene subScene3D = new SubScene(new Group(), 700, 700);
@@ -94,8 +88,7 @@ public class MainApp extends Application {
     }
 
     private void handleSendAction(String text) {
-        textArea.appendText("Данные отправлены: " + text + "\n");
-        Client client = new Client("localhost", 8080, textArea);
+        Client client = new Client("localhost", 8080);
         client.sendMessage(text);
     }
 

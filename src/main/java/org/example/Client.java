@@ -12,12 +12,10 @@ import java.net.Socket;
 public class Client {
     private final String host;
     private final int port;
-    private final TextArea textArea;
 
-    public Client(String host, int port, TextArea textArea) {
+    public Client(String host, int port) {
         this.host = host;
         this.port = port;
-        this.textArea = textArea;
     }
 
     public void sendMessage(String jsonMessage) {
@@ -32,7 +30,6 @@ public class Client {
 
             // Чтение подтверждения от сервера
             String response = in.readLine();
-            Platform.runLater(() -> textArea.appendText("Ответ от сервера: " + response + "\n"));
 
             // Чтение данных с сервера (получение данных для графика)
             String dataJson = in.readLine();
@@ -42,7 +39,7 @@ public class Client {
             });
 
         } catch (IOException e) {
-            Platform.runLater(() -> textArea.appendText("Ошибка при подключении к серверу: " + e.getMessage() + "\n"));
+            throw new RuntimeException(e);
         }
     }
 }
