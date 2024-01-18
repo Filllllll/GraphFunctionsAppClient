@@ -18,6 +18,17 @@ public class Graph3DRenderer {
     public Graph3DRenderer(SubScene subScene3D) {
         this.subScene3D = subScene3D;
         this.group3D = (Group) subScene3D.getRoot();
+        initializeCamera();
+    }
+
+    private void initializeCamera() {
+        PerspectiveCamera camera = new PerspectiveCamera(true);
+        camera.getTransforms().addAll(
+                new Rotate(-20, Rotate.Y_AXIS),
+                new Rotate(-20, Rotate.X_AXIS),
+                new Translate(0, 0, -50)
+        );
+        subScene3D.setCamera(camera);
     }
 
     public void renderGraph(double t0, double tend, double tstep, double param1, double param2) {
@@ -54,21 +65,19 @@ public class Graph3DRenderer {
 
         // Создание объекта MeshView для отображения сетки
         MeshView meshView = new MeshView(mesh);
-        meshView.setDrawMode(DrawMode.LINE); // Отображение в виде линий
+        meshView.setDrawMode(DrawMode.LINE);
         meshView.setMaterial(new PhongMaterial(Color.BLUE));
 
         // Поворот и масштабирование графика для лучшего отображения
         meshView.setRotationAxis(Rotate.Y_AXIS);
         meshView.setRotate(180);
+        meshView.setScaleX(5);
+        meshView.setScaleY(5);
+        meshView.setScaleZ(5);
 
-        // Подключение камеры для обзора 3D сцены
-        PerspectiveCamera camera = new PerspectiveCamera(true);
-        camera.getTransforms().addAll(
-                new Rotate(-20, Rotate.Y_AXIS),
-                new Rotate(-20, Rotate.X_AXIS),
-                new Translate(0, 0, -50));
-
-        subScene3D.setCamera(camera);
+        // Позиционирование графика
+        meshView.setTranslateX(0); // Центр в SubScene
+        meshView.setTranslateY(0); // Центр в SubScene
 
         // Добавление MeshView в группу для отображения
         group3D.getChildren().add(meshView);

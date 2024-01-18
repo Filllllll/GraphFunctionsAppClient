@@ -1,21 +1,22 @@
 package org.example;
 
+import org.json.JSONObject;
+
+
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Group;
-import javafx.scene.PerspectiveCamera;
 import javafx.scene.Scene;
 import javafx.scene.SubScene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
-import org.json.JSONObject;
 
 public class MainApp extends Application {
     private TextArea textArea; // Это переменная класса, которая должна быть инициализирована
@@ -25,85 +26,79 @@ public class MainApp extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("ApplicationGraphFunctions");
 
-        VBox vBox = new VBox(10); // Установка расстояния между элементами в VBox
-        vBox.setPadding(new Insets(10)); // Установка отступа для VBox
+        GridPane inputGridPane = new GridPane();
+        inputGridPane.setPadding(new Insets(10));
+        inputGridPane.setHgap(10);
+        inputGridPane.setVgap(10);
 
-        // Создаем горизонтальные контейнеры для каждой пары "метка + текстовое поле"
-        HBox hbFuncName = new HBox(10, new Label("Функция:"), new TextField("user")); // TODO: clear value of fields
-        HBox hbTEmit = new HBox(10, new Label("t_emit:"), new TextField("1"));
-        HBox hbTStep = new HBox(10, new Label("t_step:"), new TextField("0.1"));
-        HBox hbTEnd = new HBox(10, new Label("t_end:"), new TextField("6.28"));
-        HBox hbT0 = new HBox(10, new Label("t_0:"), new TextField("0"));
-        HBox hbParam1 = new HBox(10, new Label("param1:"), new TextField("1"));
-        HBox hbParam2 = new HBox(10, new Label("param2:"), new TextField("1"));
+        inputGridPane.add(new Label("Функция:"), 0, 0);
+        TextField tfFuncName = new TextField();
+        inputGridPane.add(tfFuncName, 1, 0);
+        inputGridPane.add(new Label("t_emit:"), 0, 1);
+        TextField tfTEmit = new TextField();
+        inputGridPane.add(tfTEmit, 1, 1);
+        inputGridPane.add(new Label("t_step:"), 0, 2);
+        TextField tfTStep = new TextField();
+        inputGridPane.add(tfTStep, 1, 2);
+        inputGridPane.add(new Label("t_end:"), 0, 3);
+        TextField tfTEnd = new TextField();
+        inputGridPane.add(tfTEnd, 1, 3);
+        inputGridPane.add(new Label("t_0:"), 0, 4);
+        TextField tfT0 = new TextField();
+        inputGridPane.add(tfT0, 1, 4);
+        inputGridPane.add(new Label("param1:"), 0, 5);
+        TextField tfParam1 = new TextField();
+        inputGridPane.add(tfParam1, 1, 5);
+        inputGridPane.add(new Label("param2:"), 0, 6);
+        TextField tfParam2 = new TextField();
+        inputGridPane.add(tfParam2, 1, 6);
 
-        // Текстовая область для вывода информации
         textArea = new TextArea();
         textArea.setEditable(false);
-
-        // Создаем кнопки и устанавливаем их обработчики событий
         Button drawGraphButton = new Button("Построить график");
-        drawGraphButton.setMaxWidth(Double.MAX_VALUE);
-
         Button startServerButton = new Button("Запустить сервер");
-        startServerButton.setMaxWidth(Double.MAX_VALUE);
 
-        // Объединяем обработчики событий для кнопки построения графика
+        // Действия для кнопок
         drawGraphButton.setOnAction(event -> {
-            double t0 = Double.parseDouble(((TextField) hbT0.getChildren().get(1)).getText());
-            double tend = Double.parseDouble(((TextField) hbTEnd.getChildren().get(1)).getText());
-            double tStep = Double.parseDouble(((TextField) hbTStep.getChildren().get(1)).getText());
-            double param1 = Double.parseDouble(((TextField) hbParam1.getChildren().get(1)).getText());
-            double param2 = Double.parseDouble(((TextField) hbParam2.getChildren().get(1)).getText());
+            // Получение данных из текстовых полей
+            double t0 = Double.parseDouble(tfT0.getText());
+            double tend = Double.parseDouble(tfTEnd.getText());
+            double tStep = Double.parseDouble(tfTStep.getText());
+            double param1 = Double.parseDouble(tfParam1.getText());
+            double param2 = Double.parseDouble(tfParam2.getText());
 
-            // Построение графика
+            // Рендеринг графика
             graph3DRenderer.renderGraph(t0, tend, tStep, param1, param2);
 
-            // Подготовка данных для отправки на сервер
-            String funcName = ((TextField) hbFuncName.getChildren().get(1)).getText();
-            String tEmit = ((TextField) hbTEmit.getChildren().get(1)).getText();
-
-            String json = createJson(funcName, tEmit, String.valueOf(tStep),
-                    String.valueOf(tend), String.valueOf(t0),
-                    String.valueOf(param1), String.valueOf(param2));
+            // Сериализация данных в JSON и отправка на сервер
+            String json = createJson(tfFuncName.getText(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
             handleSendAction(json);
         });
 
-        SubScene subScene3D = new SubScene(new Group(), 600, 600);
+        // Добавляем все элементы в GridPane
+        inputGridPane.add(drawGraphButton, 0, 7, 2, 1);
+        inputGridPane.add(startServerButton, 0, 8, 2, 1);
+        inputGridPane.add(textArea, 0, 9, 2, 1);
+
+        StackPane graphContainer = new StackPane();
+        SubScene subScene3D = new SubScene(new Group(), 700, 700);
         subScene3D.setFill(Color.ALICEBLUE);
-
-        // Установка камеры
-        PerspectiveCamera camera = new PerspectiveCamera(true);
-        camera.setNearClip(0.1);
-        camera.setFarClip(1000.0);
-        camera.getTransforms().addAll(new Translate(0, 0, -200)); // Подвинем камеру назад
-        subScene3D.setCamera(camera);
-
+        graphContainer.getChildren().add(subScene3D);
         graph3DRenderer = new Graph3DRenderer(subScene3D);
 
-        // Добавляем все элементы в VBox
-        vBox.getChildren()
-                .addAll(hbFuncName,
-                        hbTEmit,
-                        hbTStep,
-                        hbTEnd,
-                        hbT0,
-                        hbParam1,
-                        hbParam2,
-                        drawGraphButton,
-                        startServerButton,
-                        textArea,
-                        subScene3D
-                );
 
-        Scene scene = new Scene(vBox, 800, 600); // Устанавливаем размер сцены
+        HBox mainContainer = new HBox(10, inputGridPane, graphContainer);
+
+        // Создаем основную сцену и отображаем ее
+        Scene scene = new Scene(mainContainer, 1200, 800);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
-    private void handleSendAction(String text) { // client
+
+    private void handleSendAction(String text) {
         textArea.appendText("Данные отправлены: " + text + "\n");
-        Client client = new Client("localhost", 8081, textArea);
+        Client client = new Client("localhost", 8080, textArea);
         client.sendMessage(text);
     }
 
