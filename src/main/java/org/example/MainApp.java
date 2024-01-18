@@ -56,7 +56,6 @@ public class MainApp extends Application {
         textArea = new TextArea();
         textArea.setEditable(false);
         Button drawGraphButton = new Button("Построить график");
-        Button startServerButton = new Button("Запустить сервер");
 
         // Действия для кнопок
         drawGraphButton.setOnAction(event -> {
@@ -77,7 +76,6 @@ public class MainApp extends Application {
 
         // Добавляем все элементы в GridPane
         inputGridPane.add(drawGraphButton, 0, 7, 2, 1);
-        inputGridPane.add(startServerButton, 0, 8, 2, 1);
         inputGridPane.add(textArea, 0, 9, 2, 1);
 
         StackPane graphContainer = new StackPane();
@@ -94,7 +92,6 @@ public class MainApp extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
     }
-
 
     private void handleSendAction(String text) {
         textArea.appendText("Данные отправлены: " + text + "\n");
