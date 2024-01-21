@@ -1,6 +1,5 @@
 package org.example;
 
-import javafx.scene.DepthTest;
 import javafx.scene.Group;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.SubScene;
@@ -10,8 +9,6 @@ import javafx.scene.shape.Cylinder;
 import javafx.scene.shape.DrawMode;
 import javafx.scene.shape.MeshView;
 import javafx.scene.shape.TriangleMesh;
-import javafx.scene.text.Font;
-import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
 
@@ -129,5 +126,4 @@ public class Graph3DRenderer {
         // Добавление MeshView в группу для отображения
         group3D.getChildren().add(meshView);
     }
-
 }

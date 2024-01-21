@@ -16,8 +16,19 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
+import static org.example.Params.*;
+
 public class MainApp extends Application {
     private Graph3DRenderer graph3DRenderer;
+
+    private TextField tfT0;
+
+    private TextField tfTEnd;
+    private TextField tfTStep;
+    private TextField tfParam1;
+    private TextField tfParam2;
+    private TextField tfTEmit;
+    private TextField tfFuncName;
 
     @Override
     public void start(Stage primaryStage) {
@@ -29,25 +40,25 @@ public class MainApp extends Application {
         inputGridPane.setVgap(10);
 
         inputGridPane.add(new Label("Функция:"), 0, 0);
-        TextField tfFuncName = new TextField();
+        tfFuncName = new TextField();
         inputGridPane.add(tfFuncName, 1, 0);
         inputGridPane.add(new Label("t_emit:"), 0, 1);
-        TextField tfTEmit = new TextField();
+        tfTEmit = new TextField("0");
         inputGridPane.add(tfTEmit, 1, 1);
         inputGridPane.add(new Label("t_step:"), 0, 2);
-        TextField tfTStep = new TextField();
+        tfTStep = new TextField("0.1");
         inputGridPane.add(tfTStep, 1, 2);
         inputGridPane.add(new Label("t_end:"), 0, 3);
-        TextField tfTEnd = new TextField();
+        tfTEnd = new TextField("6");
         inputGridPane.add(tfTEnd, 1, 3);
         inputGridPane.add(new Label("t_0:"), 0, 4);
-        TextField tfT0 = new TextField();
+        tfT0 = new TextField("0");
         inputGridPane.add(tfT0, 1, 4);
         inputGridPane.add(new Label("param1:"), 0, 5);
-        TextField tfParam1 = new TextField();
+        tfParam1 = new TextField("1");
         inputGridPane.add(tfParam1, 1, 5);
         inputGridPane.add(new Label("param2:"), 0, 6);
-        TextField tfParam2 = new TextField();
+        tfParam2 = new TextField("1");
         inputGridPane.add(tfParam2, 1, 6);
 
         Button drawGraphButton = new Button("Построить график");
@@ -55,18 +66,21 @@ public class MainApp extends Application {
         // Действия для кнопок
         drawGraphButton.setOnAction(event -> {
             // Получение данных из текстовых полей
-            double t0 = Double.parseDouble(tfT0.getText());
-            double tend = Double.parseDouble(tfTEnd.getText());
-            double tStep = Double.parseDouble(tfTStep.getText());
-            double param1 = Double.parseDouble(tfParam1.getText());
-            double param2 = Double.parseDouble(tfParam2.getText());
+            if (checkValueOfFields()) { // проверка на корректность полей
+                System.out.println("setOnAction");
+                double t0 = Double.parseDouble(tfT0.getText());
+                double tend = Double.parseDouble(tfTEnd.getText());
+                double tStep = Double.parseDouble(tfTStep.getText());
+                double param1 = Double.parseDouble(tfParam1.getText());
+                double param2 = Double.parseDouble(tfParam2.getText());
 
-            // Рендеринг графика
-            graph3DRenderer.renderGraph(t0, tend, tStep, param1, param2);
+                // Рендеринг графика
+                graph3DRenderer.renderGraph(t0, tend, tStep, param1, param2);
 
-            // Сериализация данных в JSON и отправка на сервер
-            String json = createJson(tfFuncName.getText(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
-            handleSendAction(json);
+                // Сериализация данных в JSON и отправка на сервер
+                String json = createJson(tfFuncName.getText(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
+                handleSendAction(json);
+            }
         });
 
         // Добавляем все элементы в GridPane
@@ -88,7 +102,7 @@ public class MainApp extends Application {
     }
 
     private void handleSendAction(String text) {
-        Client client = new Client("localhost", 8080);
+        Client client = new Client("localhost", 8081);
         client.sendMessage(text);
     }
 
@@ -99,13 +113,61 @@ public class MainApp extends Application {
     private String createJson(String funcName, String tEmit, String tStep, String tEnd, String t0, String param1, String param2) {
         // Сериализация данных в JSON
         JSONObject json = new JSONObject();
-        json.put("func_name", funcName);
-        json.put("t_emit", tEmit);
-        json.put("t_step", tStep);
-        json.put("t_end", tEnd);
-        json.put("t_0", t0);
-        json.put("param1", param1);
-        json.put("param2", param2);
+        json.put(FUNC_NAME.name(), funcName);
+        json.put(T_EMIT.name(), tEmit);
+        json.put(T_STEP.name(), tStep);
+        json.put(T_END.name(), tEnd);
+        json.put(T_0.name(), t0);
+        json.put(PARAM1.name(), param1);
+        json.put(PARAM2.name(), param2);
         return json.toString();
+    }
+
+    private boolean checkValueOfFields() {
+        boolean res = true;
+
+        try {
+            Double.parseDouble(tfTEmit.getText());
+        } catch (IllegalArgumentException ex) {
+            tfTEmit.setText("Need a number!");
+            res = false;
+        }
+
+        try {
+            Double.parseDouble(tfT0.getText());
+        } catch (IllegalArgumentException ex) {
+            tfT0.setText("Need a number!");
+            res = false;
+        }
+
+        try {
+            Double.parseDouble(tfTEnd.getText());
+        } catch (IllegalArgumentException ex) {
+            tfTEnd.setText("Need a number!");
+            res = false;
+        }
+
+        try {
+            Double.parseDouble(tfTStep.getText());
+        } catch (IllegalArgumentException ex) {
+            tfTStep.setText("Need a number!");
+            res = false;
+        }
+
+        try {
+            Double.parseDouble(tfParam1.getText());
+        } catch (IllegalArgumentException ex) {
+            tfParam1.setText("Need a number!");
+            res = false;
+        }
+
+        try {
+            Double.parseDouble(tfParam2.getText());
+        } catch (IllegalArgumentException ex) {
+            tfParam2.setText("Need a number!");
+            res = false;
+        }
+
+        return res;
     }
 }
