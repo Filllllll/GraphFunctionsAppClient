@@ -33,14 +33,23 @@ public class Client {
 
             // Чтение подтверждения от сервера
             String response = in.readLine();
+            JSONObject lastJson = null;
 
             while (!response.equals("end")) {
-                JSONObject json = new JSONObject(response);
-                System.out.println("Point x = " + getFloatValue(json, X) + ", Y = "
-                        + getFloatValue(json, Y) + ", Z = " + getFloatValue(json, Z));
-
+                if (response.equals("--END OF BATCH--")) {
+                    // Конец пакета данных, выводим последнюю точку
+                    if (lastJson != null) {
+                        System.out.println("Last point in batch: x = " + getFloatValue(lastJson, X)
+                                + ", Y = " + getFloatValue(lastJson, Y)
+                                + ", Z = " + getFloatValue(lastJson, Z));
+                        lastJson = null; // Сбрасываем для следующего пакета
+                    }
+                } else {
+                    // Обновляем последнюю точку в пакете
+                    JSONObject json = new JSONObject(response);
+                    lastJson = json;
+                }
                 response = in.readLine();
-                System.out.println("new response - " + response);
             }
 
         } catch (IOException e) {

@@ -85,8 +85,8 @@ public class Graph3DRenderer {
         // Создание вершин
         for (double x = t0; x <= tend; x += tstep) {
             for (double y = t0; y <= tend; y += tstep) {
-                float z = function.compute((float) x, (float) y, (float) param1, (float) param2);
-                mesh.getPoints().addAll((float) x, (float) y, z);
+                double z = function.compute(x, y, param1, param2);
+                mesh.getPoints().addAll((float) x, (float) y, (float) z);
             }
         }
 

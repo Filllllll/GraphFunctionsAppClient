@@ -1,7 +1,7 @@
 package org.example;
 
 public class Function3D {
-    public float compute(float x, float y, float param1, float param2) {
-        return (float) (Math.sin(x * param1) * Math.cos(y * param2));
+    public double compute(double x, double y, double param1, double param2) {
+        return (Math.sin(x * param1) * Math.cos(y * param2));
     }
 }

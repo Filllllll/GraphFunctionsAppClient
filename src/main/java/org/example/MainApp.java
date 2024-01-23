@@ -16,7 +16,13 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
-import static org.example.Params.*;
+import static org.example.Params.FUNC_NAME;
+import static org.example.Params.PARAM1;
+import static org.example.Params.PARAM2;
+import static org.example.Params.T_0;
+import static org.example.Params.T_EMIT;
+import static org.example.Params.T_END;
+import static org.example.Params.T_STEP;
 
 public class MainApp extends Application {
     private Graph3DRenderer graph3DRenderer;
@@ -126,27 +132,14 @@ public class MainApp extends Application {
     private boolean checkValueOfFields() {
         boolean res = true;
 
-        try {
-            Double.parseDouble(tfTEmit.getText());
-        } catch (IllegalArgumentException ex) {
-            tfTEmit.setText("Need a number!");
-            res = false;
-        }
+        res = isRes(res, tfTEmit, tfT0, tfTEnd);
 
-        try {
-            Double.parseDouble(tfT0.getText());
-        } catch (IllegalArgumentException ex) {
-            tfT0.setText("Need a number!");
-            res = false;
-        }
+        res = isRes(res, tfTStep, tfParam1, tfParam2);
 
-        try {
-            Double.parseDouble(tfTEnd.getText());
-        } catch (IllegalArgumentException ex) {
-            tfTEnd.setText("Need a number!");
-            res = false;
-        }
+        return res;
+    }
 
+    private boolean isRes(boolean res, TextField tfTStep, TextField tfParam1, TextField tfParam2) {
         try {
             Double.parseDouble(tfTStep.getText());
         } catch (IllegalArgumentException ex) {
@@ -167,7 +160,6 @@ public class MainApp extends Application {
             tfParam2.setText("Need a number!");
             res = false;
         }
-
         return res;
     }
 }
