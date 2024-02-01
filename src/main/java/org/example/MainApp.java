@@ -16,15 +16,20 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
-import static org.example.Params.FUNC_NAME;
-import static org.example.Params.PARAM1;
-import static org.example.Params.PARAM2;
-import static org.example.Params.T_0;
-import static org.example.Params.T_EMIT;
-import static org.example.Params.T_END;
-import static org.example.Params.T_STEP;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.Socket;
+
+import static org.example.Client.getFloatValue;
+import static org.example.Params.*;
 
 public class MainApp extends Application {
+
+    private final static int PORT = 8081;
+    private final static String HOST = "localhost";
+
     private Graph3DRenderer graph3DRenderer;
 
     private TextField tfT0;
@@ -81,11 +86,50 @@ public class MainApp extends Application {
                 double param2 = Double.parseDouble(tfParam2.getText());
 
                 // Рендеринг графика
-                graph3DRenderer.renderGraph(t0, tend, tStep, param1, param2);
+//                graph3DRenderer.drawPoint(t0, tend, tStep, param1, param2);
 
                 // Сериализация данных в JSON и отправка на сервер
-                String json = createJson(tfFuncName.getText(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
-                handleSendAction(json);
+                String jsonMessage = createJson(tfFuncName.getText(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
+
+                try (Socket socket = new Socket(HOST, PORT);
+                     DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+                    // Отправка длины сообщения
+                    out.writeInt(jsonMessage.length());
+                    System.out.println("Отправка длины сообщения - " + jsonMessage.length());
+                    // Отправка самого сообщения
+                    out.writeUTF(jsonMessage);
+                    System.out.println("Отправка самого сообщения - " + jsonMessage);
+
+                    // Чтение подтверждения от сервера
+                    String response = in.readLine();
+                    JSONObject lastJson = null;
+
+                    while (!response.equals("end")) {
+                        if (response.equals("--END OF BATCH--")) {
+                            // Конец пакета данных, выводим последнюю точку
+                            if (lastJson != null) {
+                                System.out.println("Last point in batch: x = " + getFloatValue(lastJson, X)
+                                        + ", Y = " + getFloatValue(lastJson, Y)
+                                        + ", Z = " + getFloatValue(lastJson, Z));
+                                lastJson = null; // Сбрасываем для следующего пакета
+                            }
+                        } else {
+                            // Обновляем последнюю точку в пакете
+                            System.out.println("Point: x = " + getFloatValue(lastJson, X)
+                                    + ", Y = " + getFloatValue(lastJson, Y)
+                                    + ", Z = " + getFloatValue(lastJson, Z));
+                            JSONObject json = new JSONObject(response);
+                            lastJson = json;
+                            graph3DRenderer.drawPoint(getFloatValue(lastJson, X), getFloatValue(lastJson, Y), getFloatValue(lastJson, Z)); // рисуем точку
+                        }
+                        response = in.readLine();
+                    }
+
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
         });
 
@@ -107,9 +151,42 @@ public class MainApp extends Application {
         primaryStage.show();
     }
 
-    private void handleSendAction(String text) {
-        Client client = new Client("localhost", 8081);
-        client.sendMessage(text);
+    private void handleSendAction(String jsonMessage) {
+        try (Socket socket = new Socket(HOST, PORT);
+             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+            // Отправка длины сообщения
+            out.writeInt(jsonMessage.length());
+            System.out.println("Отправка длины сообщения - " + jsonMessage.length());
+            // Отправка самого сообщения
+            out.writeUTF(jsonMessage);
+            System.out.println("Отправка самого сообщения - " + jsonMessage);
+
+            // Чтение подтверждения от сервера
+            String response = in.readLine();
+            JSONObject lastJson = null;
+
+            while (!response.equals("end")) {
+                if (response.equals("--END OF BATCH--")) {
+                    // Конец пакета данных, выводим последнюю точку
+                    if (lastJson != null) {
+                        System.out.println("Last point in batch: x = " + getFloatValue(lastJson, X)
+                                + ", Y = " + getFloatValue(lastJson, Y)
+                                + ", Z = " + getFloatValue(lastJson, Z));
+                        lastJson = null; // Сбрасываем для следующего пакета
+                    }
+                } else {
+                    // Обновляем последнюю точку в пакете
+                    JSONObject json = new JSONObject(response);
+                    lastJson = json;
+                }
+                response = in.readLine();
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void main(String[] args) {
