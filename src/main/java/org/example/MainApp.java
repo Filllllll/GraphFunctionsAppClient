@@ -1,5 +1,8 @@
 package org.example;
 
+import javafx.application.Platform;
+import javafx.scene.paint.PhongMaterial;
+import javafx.scene.shape.Sphere;
 import org.json.JSONObject;
 
 import javafx.application.Application;
@@ -21,6 +24,11 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.example.Client.getFloatValue;
 import static org.example.Params.*;
@@ -30,10 +38,7 @@ public class MainApp extends Application {
     private final static int PORT = 8081;
     private final static String HOST = "localhost";
 
-    private Graph3DRenderer graph3DRenderer;
-
     private TextField tfT0;
-
     private TextField tfTEnd;
     private TextField tfTStep;
     private TextField tfParam1;
@@ -41,14 +46,27 @@ public class MainApp extends Application {
     private TextField tfTEmit;
     private TextField tfFuncName;
 
+    private Group group3D;
+
+    private List<Sphere> listOfCurrentPoints = new ArrayList<>();
+    private List<List<Point3D>> listOfListPoints= new ArrayList<>();
+
+    private double scaleFactor = 0;
+    private final double LIMIT_Z = 5;
+
+    Graph3DRenderer1 graph;
+
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage primaryStage) throws InterruptedException {
         primaryStage.setTitle("ApplicationGraphFunctions");
+        group3D = new Group();
+        SubScene subScene3D = new SubScene(group3D, 700, 700);
 
         GridPane inputGridPane = new GridPane();
         inputGridPane.setPadding(new Insets(10));
         inputGridPane.setHgap(10);
         inputGridPane.setVgap(10);
+        StackPane graphContainer = new StackPane();
 
         inputGridPane.add(new Label("Функция:"), 0, 0);
         tfFuncName = new TextField();
@@ -74,119 +92,124 @@ public class MainApp extends Application {
 
         Button drawGraphButton = new Button("Построить график");
 
-        // Действия для кнопок
-        drawGraphButton.setOnAction(event -> {
-            // Получение данных из текстовых полей
-            if (checkValueOfFields()) { // проверка на корректность полей
-                System.out.println("setOnAction");
-                double t0 = Double.parseDouble(tfT0.getText());
-                double tend = Double.parseDouble(tfTEnd.getText());
-                double tStep = Double.parseDouble(tfTStep.getText());
-                double param1 = Double.parseDouble(tfParam1.getText());
-                double param2 = Double.parseDouble(tfParam2.getText());
-
-                // Рендеринг графика
-//                graph3DRenderer.drawPoint(t0, tend, tStep, param1, param2);
-
-                // Сериализация данных в JSON и отправка на сервер
-                String jsonMessage = createJson(tfFuncName.getText(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
-
-                try (Socket socket = new Socket(HOST, PORT);
-                     DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-
-                    // Отправка длины сообщения
-                    out.writeInt(jsonMessage.length());
-                    System.out.println("Отправка длины сообщения - " + jsonMessage.length());
-                    // Отправка самого сообщения
-                    out.writeUTF(jsonMessage);
-                    System.out.println("Отправка самого сообщения - " + jsonMessage);
-
-                    // Чтение подтверждения от сервера
-                    String response = in.readLine();
-                    JSONObject lastJson = null;
-
-                    while (!response.equals("end")) {
-                        if (response.equals("--END OF BATCH--")) {
-                            // Конец пакета данных, выводим последнюю точку
-                            if (lastJson != null) {
-                                System.out.println("Last point in batch: x = " + getFloatValue(lastJson, X)
-                                        + ", Y = " + getFloatValue(lastJson, Y)
-                                        + ", Z = " + getFloatValue(lastJson, Z));
-                                lastJson = null; // Сбрасываем для следующего пакета
-                            }
-                        } else {
-                            // Обновляем последнюю точку в пакете
-                            System.out.println("Point: x = " + getFloatValue(lastJson, X)
-                                    + ", Y = " + getFloatValue(lastJson, Y)
-                                    + ", Z = " + getFloatValue(lastJson, Z));
-                            JSONObject json = new JSONObject(response);
-                            lastJson = json;
-                            graph3DRenderer.drawPoint(getFloatValue(lastJson, X), getFloatValue(lastJson, Y), getFloatValue(lastJson, Z)); // рисуем точку
-                        }
-                        response = in.readLine();
-                    }
-
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-
         // Добавляем все элементы в GridPane
         inputGridPane.add(drawGraphButton, 0, 7, 2, 1);
 
-        StackPane graphContainer = new StackPane();
-        SubScene subScene3D = new SubScene(new Group(), 700, 700);
         subScene3D.setFill(Color.ALICEBLUE);
         graphContainer.getChildren().add(subScene3D);
-        graph3DRenderer = new Graph3DRenderer(subScene3D);
 
-
-        HBox mainContainer = new HBox(10, inputGridPane, graphContainer);
+        AtomicReference<HBox> mainContainer = new AtomicReference<>(new HBox(10, inputGridPane, graphContainer));
 
         // Создаем основную сцену и отображаем ее
-        Scene scene = new Scene(mainContainer, 1200, 800);
-        primaryStage.setScene(scene);
+        AtomicReference<Scene> scene = new AtomicReference<>(new Scene(mainContainer.get(), 1200, 800));
+        primaryStage.setScene(scene.get());
         primaryStage.show();
+
+        // Действия для кнопок
+        List<Point3D> list = new ArrayList<>();
+
+        drawGraphButton.setOnAction(event -> {
+            scaleFactor = 200 / Math.max(Math.abs(Double.valueOf(tfTEnd.getText())), Math.abs(Double.valueOf(tfT0.getText())));
+            System.out.println("scalefactor - " + scaleFactor);
+            graph = new Graph3DRenderer1(subScene3D, Math.max(Math.abs(Double.valueOf(tfTEnd.getText())), Math.abs(Double.valueOf(tfT0.getText()))));
+            System.out.println("graph");
+
+            // Получение данных из текстовых полей
+            if (checkValueOfFields()) { // проверка на корректность полей
+                System.out.println("checkValueOfFields");
+                // Удаляем точки
+                group3D.getChildren().removeAll(listOfCurrentPoints);
+                System.out.println("group3D");
+
+                // Сериализация данных в JSON и отправка на сервер
+                String jsonMessage = createJson(tfFuncName.getText(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
+                Thread socketThread = new Thread(() -> {
+                    try (Socket socket = new Socket(HOST, PORT);
+                         DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                         BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+
+                        // Отправка длины сообщения
+                        out.writeInt(jsonMessage.length());
+                        // Отправка самого сообщения
+                        out.writeUTF(jsonMessage);
+
+                        // Чтение подтверждения от сервера
+                        String response = in.readLine();
+                        JSONObject lastJson = null;
+
+                        while (!response.equals("end")) {
+                            if (response.equals("--END OF BATCH--")) {
+                                // Конец пакета данных, выводим последнюю точку
+                                if (lastJson != null) {
+                                    System.out.println("Last point in batch: x = " + getFloatValue(lastJson, X)
+                                            + ", Y = " + getFloatValue(lastJson, Y)
+                                            + ", Z = " + getFloatValue(lastJson, Z));
+                                    lastJson = null; // Сбрасываем для следующего пакета
+
+                                    Thread draw = new Thread(() -> {
+                                        Platform.runLater(() -> setPoints(list));
+                                    });
+                                    draw.start();
+                                    Thread.sleep(200);
+                                    list.clear();
+                                }
+
+                            } else {
+                                JSONObject json = new JSONObject(response);
+                                lastJson = json;
+                                list.add(new Point3D(getFloatValue(lastJson, X), getFloatValue(lastJson, Y), getFloatValue(lastJson, Z)));
+                            }
+                            response = in.readLine();
+                        }
+                        Thread draw = new Thread(() -> {
+                            Platform.runLater(() -> setPoints(list));
+                        });
+                        draw.start();
+                        Thread.sleep(200);
+                        list.clear();
+
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                });
+                socketThread.start();
+            }
+        });
     }
 
-    private void handleSendAction(String jsonMessage) {
-        try (Socket socket = new Socket(HOST, PORT);
-             DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+    private void setPoints(List<Point3D> list) {
+        PhongMaterial material = new PhongMaterial();
+        material.setDiffuseColor(Color.BLUE); // Устанавливаем основной цвет
+        material.setSpecularColor(Color.WHITE); // Устанавливаем цвет бликов
+        material.setSpecularPower(64); // Устанавливаем интенсивность бликов
 
-            // Отправка длины сообщения
-            out.writeInt(jsonMessage.length());
-            System.out.println("Отправка длины сообщения - " + jsonMessage.length());
-            // Отправка самого сообщения
-            out.writeUTF(jsonMessage);
-            System.out.println("Отправка самого сообщения - " + jsonMessage);
+        // Устанавливаем прозрачность (значение от 0.0 до 1.0, где 0.0 - полностью прозрачный, 1.0 - непрозрачный)
+        material.setDiffuseColor(Color.rgb(0, 0, 255, 0.3)); // Устанавливаем синий цвет с прозрачностью 0.5
 
-            // Чтение подтверждения от сервера
-            String response = in.readLine();
-            JSONObject lastJson = null;
+        for (int i = 0; i < list.size(); i++) {
+            double x = list.get(i).getX();
+            double y = list.get(i).getY();
+            double z = list.get(i).getZ();
+            if (z > LIMIT_Z) continue;
 
-            while (!response.equals("end")) {
-                if (response.equals("--END OF BATCH--")) {
-                    // Конец пакета данных, выводим последнюю точку
-                    if (lastJson != null) {
-                        System.out.println("Last point in batch: x = " + getFloatValue(lastJson, X)
-                                + ", Y = " + getFloatValue(lastJson, Y)
-                                + ", Z = " + getFloatValue(lastJson, Z));
-                        lastJson = null; // Сбрасываем для следующего пакета
-                    }
-                } else {
-                    // Обновляем последнюю точку в пакете
-                    JSONObject json = new JSONObject(response);
-                    lastJson = json;
-                }
-                response = in.readLine();
-            }
+            Sphere sphere = new Sphere(3);
+            sphere.setTranslateX(x * scaleFactor);
+            sphere.setTranslateY(y * scaleFactor);
+            sphere.setTranslateZ(z * scaleFactor);
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            // Устанавливаем материал для сферы
+            sphere.setMaterial(material);
+
+            // Отображаем сферу на графике
+            group3D.getChildren().add(sphere);
+
+            // Добавляем точку в лист с точками в текущем отображении
+            listOfCurrentPoints.add(sphere);
         }
+
     }
 
     public static void main(String[] args) {
