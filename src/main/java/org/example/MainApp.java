@@ -1,6 +1,7 @@
 package org.example;
 
 import javafx.application.Platform;
+import javafx.scene.control.Slider;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Sphere;
 import org.json.JSONObject;
@@ -45,6 +46,7 @@ public class MainApp extends Application {
     private TextField tfParam2;
     private TextField tfTEmit;
     private TextField tfFuncName;
+    private Slider slider; // Добавляем слайдер
 
     private Group group3D;
 
@@ -57,7 +59,7 @@ public class MainApp extends Application {
     Graph3DRenderer1 graph;
 
     @Override
-    public void start(Stage primaryStage) throws InterruptedException {
+    public void start(Stage primaryStage) {
         primaryStage.setTitle("ApplicationGraphFunctions");
         group3D = new Group();
         SubScene subScene3D = new SubScene(group3D, 700, 700);
@@ -72,7 +74,7 @@ public class MainApp extends Application {
         tfFuncName = new TextField();
         inputGridPane.add(tfFuncName, 1, 0);
         inputGridPane.add(new Label("t_emit:"), 0, 1);
-        tfTEmit = new TextField("0");
+        tfTEmit = new TextField("200");
         inputGridPane.add(tfTEmit, 1, 1);
         inputGridPane.add(new Label("t_step:"), 0, 2);
         tfTStep = new TextField("0.1");
@@ -92,8 +94,19 @@ public class MainApp extends Application {
 
         Button drawGraphButton = new Button("Построить график");
 
+        // Инициализируем слайдер
+        slider = new Slider();
+        slider.setMin(0);
+        slider.setMax(0); // Измените максимальное значение, когда у вас будут точки
+        slider.setShowTickMarks(true);
+        slider.setShowTickLabels(true);
+        slider.setMajorTickUnit(1);
+        slider.setMinorTickCount(0);
+        slider.setSnapToTicks(true);
+
         // Добавляем все элементы в GridPane
         inputGridPane.add(drawGraphButton, 0, 7, 2, 1);
+        inputGridPane.add(slider, 0, 8, 2, 1);
 
         subScene3D.setFill(Color.ALICEBLUE);
         graphContainer.getChildren().add(subScene3D);
@@ -118,7 +131,9 @@ public class MainApp extends Application {
             if (checkValueOfFields()) { // проверка на корректность полей
                 System.out.println("checkValueOfFields");
                 // Удаляем точки
+                listOfListPoints = new ArrayList<>(); // обнуляем историю
                 group3D.getChildren().removeAll(listOfCurrentPoints);
+                slider.setMax(0); // обнуляем слайдер
                 System.out.println("group3D");
 
                 // Сериализация данных в JSON и отправка на сервер
@@ -178,9 +193,18 @@ public class MainApp extends Application {
                 socketThread.start();
             }
         });
+
+        // Добавляем слушатель изменений значения слайдера
+        slider.valueProperty().addListener((observable, oldValue, newValue) -> {
+            int index = newValue.intValue(); // Получаем текущее значение слайдера
+
+            Platform.runLater(() -> setPoints(index));
+        });
     }
 
     private void setPoints(List<Point3D> list) {
+        listOfListPoints.add(new ArrayList<Point3D>(list));
+
         PhongMaterial material = new PhongMaterial();
         material.setDiffuseColor(Color.BLUE); // Устанавливаем основной цвет
         material.setSpecularColor(Color.WHITE); // Устанавливаем цвет бликов
@@ -210,6 +234,44 @@ public class MainApp extends Application {
             listOfCurrentPoints.add(sphere);
         }
 
+
+        slider.setMax(slider.getMax() + 1); // увеличиваем на одно деление слайдер
+
+    }
+
+    private void setPoints(int ind) {
+        group3D.getChildren().removeAll(listOfCurrentPoints); // удаляем все что есть на графике
+
+        PhongMaterial material = new PhongMaterial();
+        material.setDiffuseColor(Color.BLUE); // Устанавливаем основной цвет
+        material.setSpecularColor(Color.WHITE); // Устанавливаем цвет бликов
+        material.setSpecularPower(64); // Устанавливаем интенсивность бликов
+        // Устанавливаем прозрачность (значение от 0.0 до 1.0, где 0.0 - полностью прозрачный, 1.0 - непрозрачный)
+        material.setDiffuseColor(Color.rgb(0, 0, 255, 0.3)); // Устанавливаем синий цвет с прозрачностью 0.5
+
+        for (int j = 0; j < ind; j++) {
+            List<Point3D> list = listOfListPoints.get(j);
+            for (int i = 0; i < list.size(); i++) {
+                double x = list.get(i).getX();
+                double y = list.get(i).getY();
+                double z = list.get(i).getZ();
+                if (z > LIMIT_Z) continue; // ограничение на ось Z
+
+                Sphere sphere = new Sphere(3);
+                sphere.setTranslateX(x * scaleFactor);
+                sphere.setTranslateY(y * scaleFactor);
+                sphere.setTranslateZ(z * scaleFactor);
+
+                // Устанавливаем материал для сферы
+                sphere.setMaterial(material);
+
+                // Отображаем сферу на графике
+                group3D.getChildren().add(sphere);
+
+                // Добавляем точку в лист с точками в текущем отображении
+                listOfCurrentPoints.add(sphere);
+            }
+        }
     }
 
     public static void main(String[] args) {
@@ -235,6 +297,19 @@ public class MainApp extends Application {
         res = isRes(res, tfTEmit, tfT0, tfTEnd);
 
         res = isRes(res, tfTStep, tfParam1, tfParam2);
+
+        try {
+            Integer.parseInt(tfTEmit.getText());
+        } catch (IllegalArgumentException ex) {
+            tfTEmit.setText("Need a Integer!");
+            res = false;
+        }
+
+        if (Integer.parseInt(tfTEnd.getText()) < Integer.parseInt(tfT0.getText())) {
+            tfTEnd.setText("t_end must be >= t_0");
+            tfT0.setText("t_0 must be <= t_end");
+            res = false;
+        }
 
         return res;
     }

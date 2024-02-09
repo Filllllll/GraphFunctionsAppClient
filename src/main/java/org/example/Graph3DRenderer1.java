@@ -4,6 +4,7 @@ import javafx.geometry.Point3D;
 import javafx.scene.Group;
 import javafx.scene.PerspectiveCamera;
 import javafx.scene.SubScene;
+import javafx.scene.chart.Axis;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.*;
@@ -89,10 +90,11 @@ public class Graph3DRenderer1 {
         zAxis.setRotationAxis(Rotate.X_AXIS);
         zAxis.setRotate(90);
 
+        group3D.getChildren().removeIf(node -> node instanceof Text); // удаляем предыдущие деления осей, если они конечно есть
         group3D.getChildren().addAll(xAxis, yAxis, zAxis);
 
         // Добавление подписей к осям и числовых делений
-        int len = 210;
+        int len = 212;
         addAxisLabel("X", len, 0, 0);
         addAxisLabel("Y", 0, len, 0);
         addAxisLabel("Z", 0, 0, len);
