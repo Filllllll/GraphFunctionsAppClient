@@ -1,7 +1,7 @@
 package org.example;
 
 import javafx.application.Platform;
-import javafx.scene.control.Slider;
+import javafx.scene.control.*;
 import javafx.scene.paint.PhongMaterial;
 import javafx.scene.shape.Sphere;
 import org.json.JSONObject;
@@ -11,9 +11,6 @@ import javafx.geometry.Insets;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.SubScene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
@@ -45,7 +42,8 @@ public class MainApp extends Application {
     private TextField tfParam1;
     private TextField tfParam2;
     private TextField tfTEmit;
-    private TextField tfFuncName;
+//    private TextField tfFuncName;
+    private ComboBox<String> tfFuncName;
     private Slider slider; // Добавляем слайдер
 
     private Group group3D;
@@ -71,7 +69,15 @@ public class MainApp extends Application {
         StackPane graphContainer = new StackPane();
 
         inputGridPane.add(new Label("Функция:"), 0, 0);
-        tfFuncName = new TextField();
+//        tfFuncName = new TextField();
+
+        tfFuncName = new ComboBox<>();
+        tfFuncName.getItems().addAll("Basic_func");
+        // Установка значения по умолчанию
+        tfFuncName.setValue("Basic_func");
+
+
+
         inputGridPane.add(tfFuncName, 1, 0);
         inputGridPane.add(new Label("t_emit:"), 0, 1);
         tfTEmit = new TextField("200");
@@ -137,7 +143,8 @@ public class MainApp extends Application {
                 System.out.println("group3D");
 
                 // Сериализация данных в JSON и отправка на сервер
-                String jsonMessage = createJson(tfFuncName.getText(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
+//                String jsonMessage = createJson(tfFuncName.getText(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
+                String jsonMessage = createJson(tfFuncName.getValue(), tfTEmit.getText(), tfTStep.getText(), tfTEnd.getText(), tfT0.getText(), tfParam1.getText(), tfParam2.getText());
                 Thread socketThread = new Thread(() -> {
                     try (Socket socket = new Socket(HOST, PORT);
                          DataOutputStream out = new DataOutputStream(socket.getOutputStream());
