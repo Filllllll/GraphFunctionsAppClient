@@ -42,14 +42,14 @@ public class MainApp extends Application {
     private TextField tfParam1;
     private TextField tfParam2;
     private TextField tfTEmit;
-//    private TextField tfFuncName;
+    //    private TextField tfFuncName;
     private ComboBox<String> tfFuncName;
     private Slider slider; // Добавляем слайдер
 
     private Group group3D;
 
     private List<Sphere> listOfCurrentPoints = new ArrayList<>();
-    private List<List<Point3D>> listOfListPoints= new ArrayList<>();
+    private List<List<Point3D>> listOfListPoints = new ArrayList<>();
 
     private double scaleFactor = 0;
     private final double LIMIT_Z = 5;
@@ -72,10 +72,9 @@ public class MainApp extends Application {
 //        tfFuncName = new TextField();
 
         tfFuncName = new ComboBox<>();
-        tfFuncName.getItems().addAll("Basic_func");
+        tfFuncName.getItems().addAll("Basic_func1", "Basic_func2");
         // Установка значения по умолчанию
-        tfFuncName.setValue("Basic_func");
-
+        tfFuncName.setValue("Basic_func1");
 
 
         inputGridPane.add(tfFuncName, 1, 0);
@@ -310,6 +309,10 @@ public class MainApp extends Application {
         } catch (IllegalArgumentException ex) {
             tfTEmit.setText("Need a Integer!");
             res = false;
+        }
+
+        if (Integer.parseInt(tfTEmit.getText()) <= 0) {
+            tfTEmit.setText("Need positive value");
         }
 
         if (Integer.parseInt(tfTEnd.getText()) < Integer.parseInt(tfT0.getText())) {
