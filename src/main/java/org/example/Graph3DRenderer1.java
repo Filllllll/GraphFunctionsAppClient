@@ -99,8 +99,7 @@ public class Graph3DRenderer1 {
         addAxisLabel("Y", 0, len, 0);
         addAxisLabel("Z", 0, 0, len);
 
-//        int numberDivision = 20; // TODO: this
-        int numberDivision = (int) Math.ceil(maxDivision) * 2 ; // TODO: this
+        int numberDivision = (int) Math.ceil(maxDivision) * 2;
         System.out.println("numberDiv = " + numberDivision);
 
         addTickMarksOnXAxis(numberDivision);  // 10 делений на оси X
@@ -126,7 +125,7 @@ public class Graph3DRenderer1 {
 
         // Начинаем добавление делений с половины влево от точки пересечения осей
 //        for (int i = -numTickMarks / 2; i <= numTickMarks / 2; i++) {
-        for (int i = -numTickMarks / 2; i <= numTickMarks / 2; i+= increment) {
+        for (int i = -numTickMarks / 2; i <= numTickMarks / 2; i += increment) {
             double x = originX + i * tickMarkSpacing;
             double y = originY;
             double z = originZ;
@@ -153,7 +152,7 @@ public class Graph3DRenderer1 {
 
         // Начинаем добавление делений с половины влево от точки пересечения осей
 //        for (int i = -numTickMarks / 2; i <= numTickMarks / 2; i++) {
-        for (int i = -numTickMarks / 2; i <= numTickMarks / 2; i+= increment) {
+        for (int i = -numTickMarks / 2; i <= numTickMarks / 2; i += increment) {
             double x = originX;
             double y = originY + i * tickMarkSpacing;
             double z = originZ;
@@ -180,7 +179,7 @@ public class Graph3DRenderer1 {
 
         // Начинаем добавление делений с половины влево от точки пересечения осей
 //        for (int i = -numTickMarks / 2; i <= numTickMarks / 2; i++) {
-        for (int i = -numTickMarks / 2; i <= numTickMarks / 2; i+= increment) {
+        for (int i = -numTickMarks / 2; i <= numTickMarks / 2; i += increment) {
             double x = originX;
             double y = originY;
             double z = originZ + i * tickMarkSpacing;
