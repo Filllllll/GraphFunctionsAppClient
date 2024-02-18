@@ -72,7 +72,7 @@ public class MainApp extends Application {
 //        tfFuncName = new TextField();
 
         tfFuncName = new ComboBox<>();
-        tfFuncName.getItems().addAll("Basic_func1", "Basic_func2");
+        tfFuncName.getItems().addAll("Basic_func1", "Basic_func2", "Func_veronica", "Func_liza");
         // Установка значения по умолчанию
         tfFuncName.setValue("Basic_func1");
 
